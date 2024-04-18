@@ -1,9 +1,14 @@
-{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant lambda" #-}
+{-# HLINT ignore "Eta reduce" #-}
+
 module Shallow where
 
 import Data.List hiding (union)
 import qualified Data.Set as S
 import Debug.Trace
+import Distribution.Simple.Setup (falseArg)
+import System.Console.Terminfo ()
 
 {-
     Punct bidimensional, reprezentat ca pereche de coordonate reale (x, y).
@@ -49,8 +54,7 @@ type Transformation = Point -> Point
     False
 -}
 inside :: Point -> Region -> Bool
-inside = undefined
-
+inside = flip ($)
 {-
     *** TODO ***
 
@@ -75,7 +79,7 @@ inside = undefined
     False
 -}
 fromPoints :: [Point] -> Region
-fromPoints = undefined
+fromPoints = flip elem
 
 {-
     *** TODO ***
@@ -99,8 +103,10 @@ fromPoints = undefined
     > rectangle 2 2 (2, 2)  
     False
 -}
+
+
 rectangle :: Float -> Float -> Region
-rectangle width height = undefined
+rectangle width height = \(x,y) -> abs x <= width / 2 && abs y <= height / 2
 
 {-
     *** TODO ***
@@ -123,7 +129,7 @@ rectangle width height = undefined
     False
 -}
 circle :: Float -> Region
-circle radius = undefined
+circle radius = \(x, y) -> x * x + y * y <= radius * radius
 
 {-
     *** TODO ***
@@ -173,8 +179,8 @@ circle radius = undefined
     ..*..
 -}
 plot :: Int -> Int -> Region -> String
-plot width height region = undefined
-
+-- init is used to remove the last newline from the string
+plot width height region = init $ unlines [[if inside (fromIntegral x,fromIntegral y) region then '*' else '.' | x <- [-width .. width]] | y <- [height, height - 1 .. -height]]
 {-
     Utilizați această funcție pentru vizualizarea diagramelor,
     după ce implementați funcția plot.
@@ -206,10 +212,9 @@ printPlot width height region = putStrLn $ plot width height region
     5.0
 -}
 promoteUnary :: (a -> b) -> Pointed a -> Pointed b
-promoteUnary = undefined
-
+promoteUnary = (.)
 promoteBinary :: (a -> b -> c) -> Pointed a -> Pointed b -> Pointed c
-promoteBinary f pointed1 pointed2 point = undefined
+promoteBinary f pointed1 pointed2 point = f (pointed1 point) (pointed2 point)
 
 {-
     *** TODO ***
@@ -244,13 +249,13 @@ promoteBinary f pointed1 pointed2 point = undefined
     .....
 -}
 complement :: Region -> Region
-complement = undefined
+complement = promoteUnary not
 
 union :: Region -> Region -> Region
-union = undefined
+union = promoteBinary (||)
 
 intersection :: Region -> Region -> Region
-intersection = undefined
+intersection = promoteBinary (&&)
 
 {-
     *** TODO ***
@@ -270,7 +275,7 @@ intersection = undefined
     (0.0,0.0)
 -}
 translation :: Float -> Float -> Transformation
-translation tx ty = undefined
+translation tx ty = \(x, y) -> (x - tx, y - ty)
 
 {-
     *** TODO ***
@@ -285,7 +290,7 @@ translation tx ty = undefined
     (1.0,1.0)
 -}
 scaling :: Float -> Transformation
-scaling factor = undefined
+scaling factor = \(x, y) -> (x / factor, y / factor)
 
 {-
     *** TODO ***
@@ -312,7 +317,7 @@ scaling factor = undefined
     .....
 -}
 applyTransformation :: Transformation -> Region -> Region
-applyTransformation = undefined
+applyTransformation = flip (.)
 
 {-
     *** TODO ***
@@ -326,8 +331,7 @@ applyTransformation = undefined
 
     Exemple:
 
-    > printPlot 2 2 $ applyTransformation
-        (combineTransformations [translation 1 0, scaling 0.5]) (circle 2)
+    > printPlot 2 2 $ applyTransformation (combineTransformations [translation 1 0, scaling 0.5]) (circle 2)
     .....
     ...*.
     ..***
@@ -340,7 +344,7 @@ applyTransformation = undefined
         applyTransformation (scaling 0.5) (circle 2)
 -}
 combineTransformations :: [Transformation] -> Transformation
-combineTransformations = undefined
+combineTransformations = foldr (.) id
 
 {-
     *** TODO ***
@@ -374,9 +378,8 @@ combineTransformations = undefined
 circles :: Int -> Region
 circles n
     | n <= 0    = const False
-    | otherwise = union (circle 2)
-                        (applyTransformation (translation 6 0)
-                                             (circles (n - 1)))
+    | otherwise = circle 2 `union` applyTransformation (translation 6 0)
+                                             (circles (n - 1))
 
 {-
     *** TODO ***
@@ -387,9 +390,8 @@ circles n
     Răspuns: ...............
 -}
 infiniteCircles :: Region
-infiniteCircles = union (circle 2)
-                        (applyTransformation (translation 6 0)
-                                             infiniteCircles)
+infiniteCircles = circle 2 `union` applyTransformation (translation 6 0)
+                                             infiniteCircles
 
 {-
     *** TODO BONUS ***
