@@ -344,7 +344,7 @@ applyTransformation = flip (.)
         applyTransformation (scaling 0.5) (circle 2)
 -}
 combineTransformations :: [Transformation] -> Transformation
-combineTransformations = foldr (.) id
+combineTransformations = foldr (flip (.)) id
 
 {-
     *** TODO ***
