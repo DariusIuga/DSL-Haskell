@@ -4,11 +4,12 @@
 
 module Shallow where
 
-import Data.List hiding (union)
+import Data.List hiding (union, insert)
 import qualified Data.Set as S
 import Debug.Trace
 import Distribution.Simple.Setup (falseArg)
 import System.Console.Terminfo ()
+import Data.Set.Internal hiding (foldr, union)
 
 {-
     Punct bidimensional, reprezentat ca pereche de coordonate reale (x, y).
@@ -373,7 +374,7 @@ combineTransformations = foldr (flip (.)) id
     ...............*.....*.....*...
     ...............................
 
-    Răspuns: ...............
+    Răspuns: Folosind evaluarea lenesa, fiecare cerc este calculat pe rand si este verificata aparteneta punctului la el, pana cand se gaseste un cerc care contine punctul sau toate cele n cercuri au fost generate. Astfel, daca punctul este inclus in unul dintre cercuri, cele aflate la dreapta lui nu mai sunt calculate.
 -}
 circles :: Int -> Region
 circles n
@@ -387,7 +388,7 @@ circles n
     Explicați la prezentare cum se comportă reuniunea infinită de mai jos
     când se verifică apartenența unui punct care NU aparține regiunii.
 
-    Răspuns: ...............
+    Răspuns: Daca punctul nu apartine regiunii, functia va fi executata la infinit deoarece nu avem o conditie de oprire. La fiecare pas va fi generat un nou cerc si deoarece verificarea apartenentei va returna mereu False, se trece la pasul urmator din recurenta.
 -}
 infiniteCircles :: Region
 infiniteCircles = circle 2 `union` applyTransformation (translation 6 0)
@@ -425,8 +426,19 @@ infiniteCircles = circle 2 `union` applyTransformation (translation 6 0)
     realizează exact această combinație, map + foldl. O puteți utiliza pentru
     a extinde implementarea de mai sus.
 -}
-bfs :: (Ord a) => a -> (a -> [a]) -> [(a, Int)]
-bfs start expand = undefined
+bfs start expand =
+    let
+        result = helper [(start, 0)] empty
+        helper [] _ = []
+        helper ((state, distance) : states) visited = if member state visited then helper states visited else (state, distance) : helper newQueue newVisited
+            where
+                expandedState = expand state
+                newStates = [(n, distance + 1) | n <- expandedState, not (member n visited)]
+                newQueue = states ++ newStates
+                newVisited = insert state visited
+    in result
+
+
 
 {-
     *** TODO BONUS ***
