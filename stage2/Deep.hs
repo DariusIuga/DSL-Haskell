@@ -290,5 +290,6 @@ fuseTransformations (transformation1 : transformation2 : rest) =
               (Union (Transform (Scaling 48.0) (Complement (Circle 5.0)))
                      (Rectangle 6.0 7.0))
 -}
+
 optimizeTransformations :: RegionAST -> RegionAST
 optimizeTransformations region = undefined
