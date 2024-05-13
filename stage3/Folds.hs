@@ -398,10 +398,10 @@ type RegionCombiner a = RegionShape a -> a
     intermediare într-un nou șir.
 -}
 foldTransformationAST :: TransformationCombiner a -> TransformationAST -> a
-foldTransformationAST f (T transformation) = undefined
+foldTransformationAST f (T transformation) = f (fmap (foldTransformationAST f) transformation)
 
 foldRegionAST :: RegionCombiner a -> RegionAST -> a
-foldRegionAST f (R region) = undefined
+foldRegionAST f (R region) = f (fmap (foldRegionAST f) region)
 
 {-
     *** TODO ***
@@ -424,7 +424,10 @@ toTransformation :: TransformationAST -> Transformation
 toTransformation = foldTransformationAST combiner
   where
     combiner :: TransformationCombiner Transformation
-    combiner transformation = undefined
+    combiner (Translation tx ty) = S.translation tx ty
+    combiner (Scaling factor) = S.scaling factor
+    combiner (Combine transformations) = S.combineTransformations transformations
+
 
 {-
     *** TODO ***
@@ -459,7 +462,10 @@ basicTransformationCount :: TransformationAST -> Int
 basicTransformationCount = foldTransformationAST combiner
   where
     combiner :: TransformationCombiner Int
-    combiner transformation = undefined
+    combiner (Translation _ _) = 1
+    combiner (Scaling _) = 1
+    combiner (Combine counts) = sum counts
+
 
 {-
     *** TODO ***
@@ -500,11 +506,12 @@ basicTransformationCount = foldTransformationAST combiner
 
     Avem 2 regiuni elementare și 7 transformări elementare.
 -}
-basicEntityCount :: RegionAST -> (Int, Int)
-basicEntityCount = foldRegionAST combiner
+basicEntityCount
+  = foldRegionAST combiner
   where
     combiner :: RegionCombiner (Int, Int)
-    combiner region = undefined
+    combiner = undefined
+
 
 {-
     *** TODO ***
