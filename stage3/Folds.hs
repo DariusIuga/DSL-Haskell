@@ -184,13 +184,14 @@ instance Show TransformationAST where
         Rectangle 4.0 5.0
 -}
 instance Show RegionAST where
-    -- use init for removing the last "\n"
+    -- Use init for removing the last "\n"
     show (R shape) = init (showShape (R shape) 0)
 
 showShape :: RegionAST -> Int -> String
 showShape (R (FromPoints points)) indent = repeatSpace indent ++ "FromPoints " ++ show points ++ "\n"
 showShape (R (Rectangle width height)) indent = repeatSpace indent ++ "Rectangle " ++ show width ++ " " ++ show height ++ "\n"
 showShape (R (Circle radius)) indent = repeatSpace indent ++ "Circle " ++ show radius ++ "\n"
+-- Increase indent by 2 for complement, union, intersection, and transform
 showShape (R (Complement region)) indent = repeatSpace indent ++ "~\n" ++ showShape region (indent + 2)
 showShape (R (Union region1 region2)) indent = repeatSpace indent ++ "+\n" ++ showShape region1 (indent + 2) ++ showShape region2 (indent + 2)
 showShape (R (Intersection region1 region2)) indent = repeatSpace indent ++ "*\n" ++ showShape region1 (indent + 2) ++ showShape region2 (indent + 2)
@@ -198,6 +199,7 @@ showShape (R (Transform transformation region)) indent = repeatSpace indent ++ s
 
 repeatSpace :: Int -> String
 repeatSpace indent = replicate indent ' '
+
 
 
 {-
@@ -259,19 +261,15 @@ repeatSpace indent = replicate indent ' '
         Rectangle 4.0 5.0
 -}
 instance Num RegionAST where
-    fromInteger n = undefined
-    
-    negate = undefined
+    fromInteger n = fromPoints [(fromInteger n, fromInteger n)]
 
-    (+) = undefined
+    negate = complement
 
-    (*) = undefined
+    (+) = union
 
-    {-
-        Diferența regiunilor trebuie implementată exclusiv prin alți operatori
-        aritmetici pe regiuni, definiți în instanța curentă.
-    -}
-    region1 - region2 = undefined
+    (*) = intersection
+
+    region1 - region2 = region1 * complement region2
 
 {-
     *** TODO ***
@@ -303,8 +301,10 @@ instance Num RegionAST where
     are un câmp de tipul [a], și nu de tipul [TransformationAST].
 -}
 instance Functor TransformationShape where
-    -- fmap :: (a -> b) -> TransformationShape a -> TransformationShape b
-    fmap f transformation = undefined
+    fmap f (Translation tx ty) = Translation tx ty
+    fmap f (Scaling s) = Scaling s
+    fmap f (Combine transformations) = Combine (map f transformations)
+
 
 {-
     *** TODO ***
@@ -330,8 +330,14 @@ instance Functor TransformationShape where
     câmpuri de tipul a, și nu de tipul RegionAST.
 -}
 instance Functor RegionShape where
-    -- fmap :: (a -> b) -> RegionShape a -> RegionShape b
-    fmap f region = undefined
+    fmap f (FromPoints points) = FromPoints points
+    fmap f (Rectangle width height) = Rectangle width height
+    fmap f (Circle radius) = Circle radius
+    fmap f (Complement region) = Complement (f region)
+    fmap f (Union region1 region2) = Union (f region1) (f region2)
+    fmap f (Intersection region1 region2) = Intersection (f region1) (f region2)
+    fmap f (Transform transformation region) = Transform transformation (f region)
+
 
 {-
     Tipul (TransformationCombiner a) include funcții care pot combina câmpurile
